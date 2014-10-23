@@ -53,9 +53,9 @@ displ[displ < -0.01] = -float('inf')
 
 def linear_plot():
 	fig, ax = plt.subplots(1, 1)
-	ax.plot(omegas, displ[:,0], 'b', label='floor 1')
-	ax.plot(omegas, displ[:,1], 'g', label='floor 2')
-	ax.plot(omegas, displ[:,2], 'r', label='floor 3')
+	ax.plot(omegas, displ[:,0], color='blue',  label='floor 1')
+	ax.plot(omegas, displ[:,1], color='green', label='floor 2')
+	ax.plot(omegas, displ[:,2], color='red',   label='floor 3')
 	ax.set_xlim(omegas[0], omegas[-1])
 	ax.set_xlabel(R'\omega')
 	ax.set_ylim(-1e-3, 1e-3)
@@ -66,9 +66,9 @@ def linear_plot():
 
 def log_plot():
 	fig, ax = plt.subplots(1, 1)
-	ax.plot(omegas, abs(displ[:,0]), 'b', label='floor 1')
-	ax.plot(omegas, abs(displ[:,1]), 'g', label='floor 2')
-	ax.plot(omegas, abs(displ[:,2]), 'r', label='floor 3')
+	ax.plot(omegas, abs(displ[:,0]), color='blue',  label='floor 1')
+	ax.plot(omegas, abs(displ[:,1]), color='green', label='floor 2')
+	ax.plot(omegas, abs(displ[:,2]), color='red',   label='floor 3')
 	ax.set_xlim(omegas[0], omegas[-1])
 	ax.set_xlabel(R'\omega')
 	ax.set_yscale('log')
@@ -78,13 +78,13 @@ def log_plot():
 
 
 def plot_modeshapes():
-	# add in an origin zero point
+	# add in a zero point for the ground floor
 	centers = np.vstack([
 		[0, 0, 0],
 		modeshapes
-		]
-	)
+	])
 
+	# find coordinates of left and right wall vertices
 	left = centers - 0.25
 	right = centers + 0.25
 	heights = np.r_[0:N+1]
@@ -96,12 +96,12 @@ def plot_modeshapes():
 		ax.set_title('Mode {}'.format(i))
 
 		# draw walls
-		ax.plot(left[:,i], heights, 'k')
-		ax.plot(right[:,i], heights, 'k')
+		ax.plot(left[:,i], heights, color='black')
+		ax.plot(right[:,i], heights, color='black')
 
 		# draw floors
 		for x1, x2, y in zip(left[:,i], right[:,i], heights):
-			ax.plot([x1, x2], [y, y], 'k')
+			ax.plot([x1, x2], [y, y], color='black')
 
 
 linear_plot()
