@@ -10,7 +10,7 @@ t = 0
 y_dot = np.zeros(N)
 y = np.zeros(N)
 dt = 0.0005
-max_t = 30
+max_t = 120
 
 def make_mat(conns):
 	mat = np.zeros((N,N))
@@ -62,7 +62,7 @@ def fourier(signal):
 
 # f = f_sin_maker(13.73912302)
 # f = inputs.on_floor(inputs.pulse, floor=0, n=N)
-f = inputs.on_floor(inputs.from_data(1), floor=0, n=N)
+f = inputs.on_floor(inputs.from_data(3), floor=0, n=N)
 
 y_prev = y
 y_values = []
@@ -86,29 +86,41 @@ while t < max_t:
 y_values = np.array(y_values)
 f_values = np.array(f_values)
 
-fig, (disp_ax, freq_ax, force_ax) = plt.subplots(3, 1)
+_, (disp_ax, force_ax) = plt.subplots(2, 1, sharex=True)
+_, (disp_fft_ax, force_fft_ax) = plt.subplots(2, 1, sharex=True)
 
 for i in range(N):
 	disp_ax.plot(t_values, y_values[:,i], label = "floor %d" % i)
-disp_ax.set_title('displacement')
+disp_ax.set_title('output displacement')
 disp_ax.grid()
 disp_ax.legend()
 
 for i in range(N):
-	freq_ax.plot(
-		*fourier(y_values[:,i]),
-		label="floor %d" % i
-	)
-freq_ax.set_xlim(0, 30)
-freq_ax.set_title('frequency')
-freq_ax.grid()
-freq_ax.legend()
+	force_ax.plot(t_values, f_values[:,i], label = "floor %d" % i)
+force_ax.set_title('input force')
+force_ax.grid()
+force_ax.legend()
 
 
 for i in range(N):
-	force_ax.plot(t_values, f_values[:,i], label = "floor %d" % i)
-force_ax.set_title('force')
-force_ax.grid()
-force_ax.legend()
+	disp_fft_ax.plot(
+		*fourier(y_values[:,i]),
+		label="floor %d" % i
+	)
+disp_fft_ax.set_xlim(0, 30)
+disp_fft_ax.set_title('output fft')
+disp_fft_ax.grid()
+disp_fft_ax.legend()
+
+for i in range(N):
+	force_fft_ax.plot(
+		*fourier(f_values[:,i]),
+		label="floor %d" % i
+	)
+force_fft_ax.set_xlim(0, 30)
+force_fft_ax.set_title('input fft')
+force_fft_ax.grid()
+force_fft_ax.legend()
+
 
 plt.show()
