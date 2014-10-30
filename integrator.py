@@ -62,6 +62,11 @@ m = np.zeros(N)
 m[:no_floors] = model_config.mass
 m[no_floors:] = model_config.mass/10
 
+
+import mechanics
+
+m, k, lam, bodies = mechanics.simulate(mechanics.f1)
+
 def fourier(signal):
 	phasors = np.fft.fft(signal)
 	phasors = phasors[:len(phasors)/2]
@@ -80,7 +85,7 @@ def f(t):
 def freq(t):
 	return scipy.interp(t, [0, 30], [1, 20])
 
-f = inputs.on_floor(f, 0, N)
+f = inputs.on_floor(f, bodies.index(mechanics.f1), N)
 # f = inputs.on_floor(inputs.pulse, floor=0, n=N)
 # f = inputs.on_floor(inputs.from_data(3), floor=0, n=N)
 
