@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import math
-
+import scipy.signal
 import model_config
 import inputs
 
@@ -9,8 +9,8 @@ N = 3
 t = 0
 y_dot = np.zeros(N)
 y = np.zeros(N)
-dt = 0.0005
-max_t = 120
+dt = 1/500.0
+max_t = 30
 
 def make_mat(conns):
 	mat = np.zeros((N,N))
@@ -60,14 +60,20 @@ def fourier(signal):
 	return freqs, np.abs(phasors)
 
 
-# f = f_sin_maker(13.73912302)
+#f = inputs.sin_maker(1, 10)
+
+def f(t):
+	return scipy.signal.chirp(t, 1, 30, 20)
+
+f = inputs.on_floor(f, 0, N)
 # f = inputs.on_floor(inputs.pulse, floor=0, n=N)
-f = inputs.on_floor(inputs.from_data(3), floor=0, n=N)
+# f = inputs.on_floor(inputs.from_data(3), floor=0, n=N)
 
 y_prev = y
 y_values = []
 f_values = []
 t_values = []
+a_values = []
 
 while t < max_t:
 	y_dot_dot = (f(t) - k.dot(y) - lam.dot(y_dot))/m
@@ -79,12 +85,14 @@ while t < max_t:
 	y_values.append(y)
 	f_values.append(f(t))
 	t_values.append(t)
+	a_values.append(y_dot_dot)
 
 	t = t+dt
 
 
 y_values = np.array(y_values)
 f_values = np.array(f_values)
+a_values = np.array(a_values)
 
 _, (disp_ax, force_ax) = plt.subplots(2, 1, sharex=True)
 _, (disp_fft_ax, force_fft_ax) = plt.subplots(2, 1, sharex=True)
