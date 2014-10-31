@@ -3,8 +3,6 @@ import scipy as sc
 import scipy.linalg
 import matplotlib.pyplot as plt
 
-plt.rc('text', usetex=True)
-
 # physical parameters
 N = 3  # number of degrees of freedom
 mass = 1.83  # of one floor
@@ -16,6 +14,8 @@ d = 0.001    # thickness of wall plate
 # calculated properties
 I = b*d*d*d/12  # second moment of area
 k = (24*E*I)/(L*L*L)  # static stiffness for each floor
+
+print k
 
 # matrix representation
 # To include vibration absorbers, you will need to modify these
