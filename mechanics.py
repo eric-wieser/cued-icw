@@ -40,83 +40,70 @@ class Conn(object):
 			self.b.name
 		)
 
-ground = Body('ground', mass=float('inf'))
+class System(object):
+	def __init__(self, containing):
+		self.bodies = []
+		self.connections = set()
 
-print ground
+		self.add_connected(containing)
 
-f1 = Body('Floor 1',    mass=1.833)
-f2 = Body('Floor 2',    mass=1.833)
-f3 = Body('Floor 3',    mass=1.833)
-a1 = Body('Absorber 1', mass=0.183)
-a2 = Body('Absorber 2', mass=0.183)
-
-Conn(k=4200, lam=1.98).between(ground, f1)
-Conn(k=4200, lam=1.98).between(f1, f2)
-Conn(k=4200, lam=1.98).between(f2, f3)
-Conn(k=585.22, lam=1.98).between(f3, a1)
-Conn(k=1220.9, lam=1.98).between(f3, a2)
-
-def simulate(body):
-	bodies = set()
-	connections = set()
-
-	def find_all(body):
-		if body in bodies:
+	def add_connected(self, body):
+		""" Add everything attached to $body to this system """
+		if body in self.bodies:
 			return
 		else:
-			bodies.add(body)
+			self.bodies.append(body)
 			for connection in body.connections:
 				if connection.a == body:
 					other = connection.b
 				else:
 					other = connection.a
 
-				connections.add(connection)
+				self.connections.add(connection)
 
-				find_all(other)
+				self.add_connected(other)
 
-	find_all(body)
+	@property
+	def DOF(self):
+		""" degrees of freedom of the system (sort of) """
+		return len(self.bodies)
 
-	print bodies
-	print connections
+	@property
+	def mass_matrix(self):
+		return np.array([body.mass for body in self.bodies])
 
-	bodies = list(body for body in bodies if body.mass != float('inf'))
-	N = len(bodies)
+	@property
+	def k_and_lam_matrices(self):
+		N = self.DOF
+		k_matrix = np.zeros((N, N))
+		lam_matrix = np.zeros((N, N))
 
-	mass_matrix = np.array([body.mass for body in bodies])
+		for connection in self.connections:
+			# convert bodies into a number, that corresponds to their index
+			# in the mass matrix
+			a_i = self.bodies.index(connection.a)
+			b_i = self.bodies.index(connection.b)
 
-	k_matrix = np.zeros((N, N))
-	lam_matrix = np.zeros((N, N))
-
-	for connection in connections:
-
-		# if either end is connected to ground
-		if connection.a.mass == float('inf'):
-			b_i = bodies.index(connection.b)
-			k_matrix[b_i, b_i] += connection.k
-			lam_matrix[b_i, b_i] += connection.lam
-
-		elif connection.b.mass == float('inf'):
-			a_i = bodies.index(connection.a)
-			k_matrix[a_i, a_i] += connection.k
-			lam_matrix[a_i, a_i] += connection.lam
-
-		else:
-			a_i = bodies.index(connection.a)
-			b_i = bodies.index(connection.b)
-
-			# (k) effect is proportional to displacement of this end
+			# force is proportional to displacement/velocity of this end
 			k_matrix[a_i, a_i] += connection.k
 			lam_matrix[a_i, a_i] += connection.lam
 			k_matrix[b_i, b_i] += connection.k
 			lam_matrix[b_i, b_i] += connection.lam
 
-
-			# ... minus displacement of other
+			# ... minus that of the other end
 			k_matrix[a_i, b_i] -= connection.k
 			lam_matrix[a_i, b_i] -= connection.lam
 			k_matrix[b_i, a_i] -= connection.k
 			lam_matrix[b_i, a_i] -= connection.lam
 
+		return k_matrix, lam_matrix
 
-	return mass_matrix, k_matrix, lam_matrix, bodies
+	def idx(self, body):
+		return self.bodies.index(body)
+
+	def __getitem__(self, name):
+		item = next(body for body in self.bodies if body.name == name)
+		if item is not None:
+			return item
+		else:
+			raise KeyError(name)
