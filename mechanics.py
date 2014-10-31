@@ -185,3 +185,23 @@ def simulate(system, forces, dt):
 	ydd_values = np.array(ydd_values)
 
 	return system._unpack(y_values), system._unpack(yd_values), system._unpack(ydd_values)
+
+def frequency_response(system, omegas, shape):
+	m      = np.diag(system.mass_matrix)
+	k, lam = system.k_and_lam_matrices
+
+	# convert force dict into force vector
+	f = np.zeros(system.DOF)
+	for body, force in shape.items():
+		f[system.idx(body)] = force
+
+	results = []
+	for w in omegas:
+		matrix = (m * (1.j * w) ** 2 + lam * (1.j * w) + k)
+		result = np.dot(np.linalg.inv(matrix), f)
+		results.append(result)
+
+
+	return system._unpack(
+		np.array(results)
+	)
