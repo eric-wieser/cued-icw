@@ -30,6 +30,8 @@ def make_building():
 def make_absorber(freq, attached_to, lam=1.98, mass=0.1*mass):
 	a = Body('%.2fHz on %s' % (freq, attached_to.name), mass=mass)
 	omega = 2 * math.pi * freq
-	c = Conn(k=omega**2 * mass, lam=lam).between(a, attached_to)
+
+	k = omega**2 * mass + lam**2 / (4 * mass)
+	c = Conn(k=k, lam=lam).between(a, attached_to)
 	print c.k
 	return a
