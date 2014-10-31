@@ -16,7 +16,6 @@ y_dot = np.zeros(N)
 y = np.zeros(N)
 dt = 1/2000.0
 max_t = 30
-no_floors = 3
 
 
 def fourier(signal):
