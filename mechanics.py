@@ -2,13 +2,17 @@ import numpy as np
 
 class Body(object):
 	"""Represents a physical body"""
-	def __init__(self, mass, name):
+	def __init__(self, name, mass):
 		self.mass = mass
 		self.name = name
 		self.connections = set()
 
 	def __repr__(self):
-		return "<Body %r with mass %.3f>"%(self.name, self.mass)
+		return "<Body(%r, mass=%.3f) [conns=%d]>" % (
+			self.name,
+			self.mass,
+			len(self.connections)
+		)
 
 class Conn(object):
 	"""Represents a physical connection"""
@@ -29,22 +33,28 @@ class Conn(object):
 		return self
 
 	def __repr__(self):
-		return "<Connection between %r and %r>"%(self.a.name, self.b.name)
-	
-Ground = Body(float('inf'), 'ground')
+		return "<Connection(k=%r, lam=%r) between %r and %r>" % (
+			self.k,
+			self.lam,
+			self.a.name,
+			self.b.name
+		)
 
+ground = Body('ground', mass=float('inf'))
 
-f1 = Body(1.83, name='Floor 1')
-f2 = Body(1.83, name='Floor 2')
-f3 = Body(1.83, name='Floor 3')
-a1 = Body(0.183, name='Absorber 1')
-a2 = Body(0.183, name='Absorber 2')
+print ground
 
-Conn(k=4200,lam=1.98).between(Ground, f1)
-Conn(k=4200,lam=1.98).between(f1, f2)
-Conn(k=4200,lam=1.98).between(f2, f3)
-Conn(k=585.22,lam=1.98).between(f3, a1)
-Conn(k=1220.9,lam=1.98).between(f3, a2)
+f1 = Body('Floor 1',    mass=1.833)
+f2 = Body('Floor 2',    mass=1.833)
+f3 = Body('Floor 3',    mass=1.833)
+a1 = Body('Absorber 1', mass=0.183)
+a2 = Body('Absorber 2', mass=0.183)
+
+Conn(k=4200, lam=1.98).between(ground, f1)
+Conn(k=4200, lam=1.98).between(f1, f2)
+Conn(k=4200, lam=1.98).between(f2, f3)
+Conn(k=585.22, lam=1.98).between(f3, a1)
+Conn(k=1220.9, lam=1.98).between(f3, a2)
 
 def simulate(body):
 	bodies = set()
