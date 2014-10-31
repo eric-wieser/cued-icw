@@ -48,11 +48,13 @@ freq_values = []
 
 # do the main integration loop
 while t < max_t:
+	# total acceleration
 	y_dot_dot = (f(t) - k.dot(y) - lam.dot(y_dot))/m
 
-	temp = y
-	y = 2*y - y_prev + dt*dt*y_dot_dot
-	y_prev = temp
+	# verlet integrate
+	y_prev, y = y, (2*y - y_prev + dt*dt*y_dot_dot)
+
+	# estimate velocity
 	y_dot = (y - y_prev)/dt
 
 	y_values.append(y)

@@ -13,6 +13,18 @@ def pulse(t):
 		return 1
 	return 0
 
+def from_array(a, sample_rate):
+	def f(t):
+		t_i = (t - 1) // 0.002
+		if t_i < len(force):
+			return force[t_i]
+
+		# after sample
+		return None
+
+	return f
+
+
 def on_floor(func, floor, n):
 	def f(t):
 		res = np.zeros(n)
@@ -29,8 +41,8 @@ def from_data(file_id):
 	}
 	fname = fnames[file_id]
 
-	all_data = scipy.io.loadmat(fname)
-	force = all_data['f0'][:,0]
+	all_data = scipy.io.loadmat(fname, squeeze_me=True)
+	force = all_data['f0']
 
 	def f(t):
 		# before earthquake
