@@ -107,3 +107,61 @@ class System(object):
 			return item
 		else:
 			raise KeyError(name)
+
+	def _unpack(self, nparray):
+		""" convert a 2d array into a dictionary of 1d arrays """
+		return {
+			body: nparray[:,i]
+			for i, body in enumerate(self.bodies)
+		}
+
+
+
+def simulate(system, forces, dt):
+	"""
+	Simulate system under $forces[body] sampled every $dt seconds
+
+	"""
+	steps = len(forces.values()[0])
+
+	# convert force dict into force vector
+	f = np.zeros((steps, system.DOF))
+	for body, force in forces.items():
+		f[:, system.idx(body)] = force
+
+	# system properties
+	m      = system.mass_matrix
+	k, lam = system.k_and_lam_matrices
+
+	# transient state
+	y         = np.zeros(system.DOF)
+	y_dot     = np.zeros(system.DOF)
+	y_dot_dot = np.zeros(system.DOF)
+	y_prev = y
+
+	# saved state
+	y_values = []
+	yd_values = []
+	ydd_values = []
+
+	# do the main integration loop
+	for i in range(0, steps):
+		# total acceleration
+		y_dot_dot = (f[i] - k.dot(y) - lam.dot(y_dot))/m
+
+		# verlet integrate
+		y_prev, y = y, (2*y - y_prev + dt*dt*y_dot_dot)
+
+		# estimate velocity
+		y_dot = (y - y_prev)/dt
+
+		y_values.append(y)
+		yd_values.append(y_dot_dot)
+		ydd_values.append(y_dot_dot)
+
+
+	y_values = np.array(y_values)
+	yd_values = np.array(yd_values)
+	ydd_values = np.array(ydd_values)
+
+	return system._unpack(y_values), system._unpack(yd_values), system._unpack(ydd_values)
