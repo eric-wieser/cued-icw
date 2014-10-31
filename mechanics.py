@@ -63,9 +63,11 @@ class System(object):
 
 				self.add_connected(other)
 
+		self.bodies = [body for body in self.bodies if body.mass != float('inf')]
+
 	@property
 	def DOF(self):
-		""" degrees of freedom of the system (sort of) """
+		""" degrees of freedom of the system """
 		return len(self.bodies)
 
 	@property
@@ -81,20 +83,38 @@ class System(object):
 		for connection in self.connections:
 			# convert bodies into a number, that corresponds to their index
 			# in the mass matrix
-			a_i = self.bodies.index(connection.a)
-			b_i = self.bodies.index(connection.b)
+			a_is_gnd = b_is_gnd = False
+			try:
+				a_i = self.bodies.index(connection.a)
+			except ValueError:
+				a_is_gnd = True
 
-			# force is proportional to displacement/velocity of this end
-			k_matrix[a_i, a_i] += connection.k
-			lam_matrix[a_i, a_i] += connection.lam
-			k_matrix[b_i, b_i] += connection.k
-			lam_matrix[b_i, b_i] += connection.lam
+			try:
+				b_i = self.bodies.index(connection.b)
+			except ValueError:
+				b_is_gnd = True
 
-			# ... minus that of the other end
-			k_matrix[a_i, b_i] -= connection.k
-			lam_matrix[a_i, b_i] -= connection.lam
-			k_matrix[b_i, a_i] -= connection.k
-			lam_matrix[b_i, a_i] -= connection.lam
+
+			if a_is_gnd and b_is_gnd:
+				raise ValueError("You're a moron")
+			elif a_is_gnd:
+				k_matrix[b_i, b_i] += connection.k
+				lam_matrix[b_i, b_i] += connection.lam
+			elif b_is_gnd:
+				k_matrix[a_i, a_i] += connection.k
+				lam_matrix[a_i, a_i] += connection.lam
+			else:
+				# force is proportional to displacement/velocity of this end
+				k_matrix[a_i, a_i] += connection.k
+				lam_matrix[a_i, a_i] += connection.lam
+				k_matrix[b_i, b_i] += connection.k
+				lam_matrix[b_i, b_i] += connection.lam
+
+				# ... minus that of the other end
+				k_matrix[a_i, b_i] -= connection.k
+				lam_matrix[a_i, b_i] -= connection.lam
+				k_matrix[b_i, a_i] -= connection.k
+				lam_matrix[b_i, a_i] -= connection.lam
 
 		return k_matrix, lam_matrix
 
