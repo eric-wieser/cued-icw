@@ -5,20 +5,28 @@ import scipy.signal
 
 import model_config
 import inputs
+from mechanics import Conn, Body, System, simulate
 
-import mechanics
-
-system = model_config.system
-
+# configure input signals
 dt = 1/2000.0
 t = np.arange(0, 30, dt)
 f = scipy.signal.chirp(t, 1, 30, 20)
 freqs = scipy.interp(t, [0, 30], [1, 20])
 
-y, yd, ydd = mechanics.simulate(
+
+# take the base building, and add absorber
+ground, floors = model_config.make_building()
+absorbers = [
+	model_config.make_absorber(freq=9, attached_to=floors[2]),
+	model_config.make_absorber(freq=13, attached_to=floors[2])
+]
+system = System(containing=ground)
+
+# simulate
+y, yd, ydd = simulate(
 	system,
 	forces={
-		model_config.floors[0]: f
+		floors[0]: f
 	},
 	dt=dt
 )
@@ -26,14 +34,14 @@ y, yd, ydd = mechanics.simulate(
 # do displacement plots
 _, (disp_ax, ab_disp_ax, force_ax) = plt.subplots(3, 1, sharex=True)
 
-for floor in model_config.floors:
+for floor in floors:
 	disp_ax.plot(freqs, y[floor], label=floor.name, linewidth=0.5)
 
 disp_ax.set_title('output displacement')
 disp_ax.grid()
 disp_ax.legend()
 
-for ab in model_config.absorbers:
+for ab in absorbers:
 	ab_disp_ax.plot(freqs, y[ab], label=ab.name, linewidth=0.5)
 
 ab_disp_ax.set_title('output displacement')
@@ -57,7 +65,7 @@ def fourier(signal):
 
 _, (disp_fft_ax, ab_disp_fft_ax, force_fft_ax) = plt.subplots(3, 1, sharex=True)
 
-for floor in model_config.floors:
+for floor in floors:
 	disp_fft_ax.plot(
 		*fourier(y[floor]),
 		label=floor.name
@@ -67,7 +75,7 @@ disp_fft_ax.set_title('output fft')
 disp_fft_ax.grid()
 disp_fft_ax.legend()
 
-for ab in model_config.absorbers:
+for ab in absorbers:
 	i = system.idx(ab)
 	ab_disp_fft_ax.plot(
 		*fourier(y[ab]),
