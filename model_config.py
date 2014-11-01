@@ -33,5 +33,7 @@ def make_absorber(freq, attached_to, lam=1.98, mass=0.1*mass):
 
 	k = omega**2 * mass + lam**2 / (4 * mass)
 	c = Conn(k=k, lam=lam).between(a, attached_to)
-	print c.k
+
+	a.floor = attached_to
+
 	return a
