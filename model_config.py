@@ -46,34 +46,10 @@ def make_absorber(freq, attached_to, lam=lam, mass=0.1*mass):
 def make_optimized_building():
 	total_damper_mass = mass
 
-	absorber_params = [
-		(3.39, 2),
-		(2.35, 2),
-		(4.48, 2),
-		(2.11, 2),
-		(9.74, 0),
-		(2.93, 2),
-		(8.37, 0),
-		(3.79, 2),
-		(2.68, 2),
-		(4.82, 1),
-		(7.78, 2),
-		(7.43, 0),
-		(3.14, 2),
-		(2.54, 2),
-		(4.00, 2),
-		(2.26, 2),
-		(2.04, 2),
-		(10.84, 0),
-		(1.98, 2),
-		(3.55, 2),
-		(9.18, 0),
-		(2.82, 2),
-		(4.17, 2),
-		(4.99, 2),
-		(2.48, 2),
-		(5.18, 2)
-	]
+	import json
+
+	with open('optimized.json') as f:
+		absorber_params = json.load(f)
 
 	ground, floors = make_building()
 	absorbers = []
