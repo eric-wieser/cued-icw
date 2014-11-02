@@ -134,9 +134,16 @@ while len(absorber_params) <= no_iterations:
 	fig.figurePatch.set_alpha(0)
 	for floor, fcolor in zip(floors, floor_colors):
 		freq_plot.plot(freqs, np.abs(freq_resp[floor]), color=fcolor, linewidth=0.5)
-	freq_plot.set_xlabel("Frequency / Hz")
-	freq_plot.set_ylabel("Amplitude / m")
-	freq_plot.set_ylim(0, 0.020)
+	freq_plot.set(
+		xlabel="Frequency / Hz",
+		ylabel="Amplitude / m",
+		ylim=[0, 0.020],
+		title="{} absorber{}".format(
+			len(absorber_params),
+			's' if len(absorber_params) != 1 else ' '
+		)
+	)
+	freq_plot.grid()
 	fig.savefig('graphs/absorber-{:02d}.png'.format(len(absorber_params)))
 	plt.close(fig)
 
