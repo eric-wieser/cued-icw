@@ -67,6 +67,11 @@ def optimize():
 			)
 		)
 		freq_plot.grid()
+
+		if absorber_params:
+			last_freq, _ = absorber_params[-1]
+			freq_plot.axvline(last_freq, color='grey')
+
 		fig.savefig('graphs/absorber-{:02d}.png'.format(len(absorber_params)))
 		plt.close(fig)
 
