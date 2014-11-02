@@ -21,6 +21,10 @@ def make_building():
 	f3 = Body('Floor 3',    mass=mass)
 	floors = [f1, f2, f3]
 
+	f1.color = 'r'
+	f2.color = 'g'
+	f3.color = 'b'
+
 	Conn(k=k, lam=lam).between(ground, f1)
 	Conn(k=k, lam=lam).between(f1, f2)
 	Conn(k=k, lam=lam).between(f2, f3)
