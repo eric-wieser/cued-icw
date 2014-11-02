@@ -115,7 +115,7 @@ first_time = True
 
 while len(absorber_params) <= no_iterations:
 	print "Step %d/%d" % (len(absorber_params), no_iterations)
-	# take the base building, and add absorber
+	# take the base building
 	ground, floors = model_config.make_building()
 	absorbers = []
 
@@ -129,6 +129,16 @@ while len(absorber_params) <= no_iterations:
 	system = System(containing=ground)
 
 	freq_resp = frequency_response(system, omegas=omegas, shape={ floors[0]: 1 })
+
+	fig, freq_plot = plt.subplots()
+	fig.figurePatch.set_alpha(0)
+	for floor, fcolor in zip(floors, floor_colors):
+		freq_plot.plot(freqs, np.abs(freq_resp[floor]), color=fcolor, linewidth=0.5)
+	freq_plot.set_xlabel("Frequency / Hz")
+	freq_plot.set_ylabel("Amplitude / m")
+	freq_plot.set_ylim(0, 0.020)
+	fig.savefig('graphs/absorber-{:02d}.png'.format(len(absorber_params)))
+	plt.close(fig)
 
 	max_by_floor = [
 		(
@@ -153,7 +163,7 @@ s_ground, s_floors = model_config.make_building()
 s_system = System(s_ground)
 
 y_before, _, _ = simulate(
-	system,
+	s_system,
 	forces={
 		floors[0]: f
 	},
