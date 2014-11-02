@@ -17,7 +17,7 @@ def from_data(t, file_id):
 	fname = fnames[file_id]
 
 	f_force = scipy.io.loadmat(fname, squeeze_me=True)['f0']
-	f_t = np.indices(f_force.shape) * 1.0/500  # 500 Hz
+	f_t = np.arange(len(f_force)) * 1.0/500  # 500 Hz
 	f_t += 1 # wait 1 second before earthquake begins
 
 	if f_t[-1] > t[-1]:
