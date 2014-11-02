@@ -24,6 +24,7 @@ floor_d = [d['data_ch2'] for d in data]
 _, _, ydd = simulate(system, { floors[0]: f}, np.diff(t)[0])
 
 fig, (ax3, ax1, ax2) = plt.subplots(3, 1, sharex=True)
+fig.figurePatch.set_alpha(0)
 
 ax1.set(title="measured response", ylabel="acceleration")
 ax2.set(title="simulated response", ylabel=u"acceleration")
@@ -46,5 +47,6 @@ ax3.grid()
 lines, labels = zip(*legends)
 fig.legend(lines, labels, 'lower center', ncol=3)
 
+fig.savefig('graphs/verify.png')
 
 plt.show()
