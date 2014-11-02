@@ -6,21 +6,20 @@ import scipy.signal
 import model_config
 import inputs
 from mechanics import Conn, Body, System, simulate, frequency_response
-"""
+
 # configure input signals
 dt = 1/200.0 # dt reduced for efficiency in looping process
-t = np.arange(0, 30, dt)
-f = scipy.signal.chirp(t, 1, 30, 20)
-freqs = scipy.interp(t, [0, 30], [1, 20])
+t = np.arange(0, 90, dt)
+freqs = scipy.interp(t, [0, t.max()], [0, 20])
 omegas = freqs * np.pi * 2
-
-print omegas
 
 # perform iterative process to distribute mass over many dampers
 
-no_iterations = 50 # no dampers we wish to add
+no_iterations = 25 # no dampers we wish to add
 absorber_params = []
 total_damper_mass = model_config.mass # can be varied, chosen arbitrarily
+
+do_optimize = False
 
 floor_colors = ["r", "g", "b"]
 
@@ -112,124 +111,172 @@ def do_freq_plot():
 	ax.legend()
 
 first_time = True
+max_amps = []
 
-while len(absorber_params) <= no_iterations:
-	print "Step %d/%d" % (len(absorber_params), no_iterations)
-	# take the base building
-	ground, floors = model_config.make_building()
-	absorbers = []
+def optimize():
+	while len(absorber_params) <= no_iterations:
+		print "Step %d/%d" % (len(absorber_params), no_iterations)
+		# take the base building
+		ground, floors = model_config.make_building()
+		absorbers = []
 
-	for fr, attached_to in absorber_params:
-		a = model_config.make_absorber(
-			freq=fr,
-			attached_to=floors[attached_to],
-			mass=total_damper_mass/len(absorber_params)
+		for fr, attached_to in absorber_params:
+			a = model_config.make_absorber(
+				freq=fr,
+				attached_to=floors[attached_to],
+				mass=total_damper_mass/len(absorber_params),
+				lam=model_config.lam/len(absorber_params)
+			)
+			absorbers.append(a)
+		system = System(containing=ground)
+
+		freq_resp = frequency_response(system, omegas=omegas, shape={ floors[0]: 1 })
+
+		fig, freq_plot = plt.subplots()
+		fig.figurePatch.set_alpha(0)
+		for floor, fcolor in zip(floors, floor_colors):
+			freq_plot.plot(freqs, np.abs(freq_resp[floor]), color=fcolor, linewidth=0.5)
+		freq_plot.set(
+			xlabel="Frequency / Hz",
+			ylabel="Amplitude / m",
+			ylim=[0, 0.005],
+			title="{} absorber{}".format(
+				len(absorber_params),
+				's' if len(absorber_params) != 1 else ' '
+			)
 		)
-		absorbers.append(a)
-	system = System(containing=ground)
+		freq_plot.grid()
+		fig.savefig('graphs/absorber-{:02d}.png'.format(len(absorber_params)))
+		plt.close(fig)
 
-	freq_resp = frequency_response(system, omegas=omegas, shape={ floors[0]: 1 })
+		max_by_floor = [
+			(
+				i,
+				freqs[np.abs(freq_resp[floor]).argmax()],
+				np.abs(freq_resp[floor]).max()
+			)
+			for i, floor in enumerate(floors)
+		]
+		max_floor_i, max_f, max_amp = max(
+			max_by_floor,
+			key=lambda (floor, freq, amp): amp
+		)
+		
+		max_amps.append(max_amp)
 
-	fig, freq_plot = plt.subplots()
+		absorber_params.append((max_f, max_floor_i))
+
+if do_optimize:
+	optimize()
+
+	for frequency, floor in absorber_params:
+		print "floor: %d \t freq: %.2f" % (floor, frequency)
+
+	# plot max amp vs no dampers
+	fig, axis = plt.subplots()
 	fig.figurePatch.set_alpha(0)
-	for floor, fcolor in zip(floors, floor_colors):
-		freq_plot.plot(freqs, np.abs(freq_resp[floor]), color=fcolor, linewidth=0.5)
-	freq_plot.set(
-		xlabel="Frequency / Hz",
-		ylabel="Amplitude / m",
-		ylim=[0, 0.020],
-		title="{} absorber{}".format(
-			len(absorber_params),
-			's' if len(absorber_params) != 1 else ' '
-		)
-	)
-	freq_plot.grid()
-	fig.savefig('graphs/absorber-{:02d}.png'.format(len(absorber_params)))
-	plt.close(fig)
+	axis.bar(np.arange(len(max_amps)), max_amps)
+	axis.grid()
+	axis.set(xlabel="number of absorbers", ylabel="maximum harmonic response (all floors)")
+	fig.savefig("graphs/amp-vs-no-abs.png")
+	plt.show()
 
-	max_by_floor = [
-		(
-			i,
-			freqs[np.abs(freq_resp[floor]).argmax()],
-			np.abs(freq_resp[floor]).max()
-		)
-		for i, floor in enumerate(floors)
-	]
-	max_floor_i, max_f, max_amp = max(
-		max_by_floor,
-		key=lambda (floor, freq, amp): amp
-	)
-	
-	absorber_params.append((max_f, max_floor_i))
-
-for frequency, floor in absorber_params:
-	print "floor: %d \t freq: %.2f" % (floor, frequency)
+else:
+	ground, floors = model_config.make_optimized_building()
+	system = System(ground)
 
 # simulate
 s_ground, s_floors = model_config.make_building()
 s_system = System(s_ground)
 
-y_before, _, _ = simulate(
-	s_system,
-	forces={
-		s_floors[0]: f
-	},
-	dt=dt
-)
-y_after, _, _ = simulate(
-	system,
-	forces={
-		floors[0]: f
-	},
-	dt=dt
-)
+input_data = [
+	('step', inputs.step(t, at=10)),
+	('sweep', scipy.signal.chirp(t, 0, t.max(), 20)),
+	('earthquake', inputs.from_data(t, 3))
+]
 
-_, (before_dplot, after_dplot, f_plot) = plt.subplots(3, 1, sharex=True)
+shared_fig, axes = plt.subplots(len(input_data), sharex=True)
 
-# plot floors before
-for floor, fcolor in zip(s_floors, floor_colors):
-	before_dplot.plot(freqs, y_before[floor], label=floor.name, color=fcolor, linewidth=0.5)
-before_dplot.set_title('output displacement')
-before_dplot.grid()
-before_dplot.legend()
+for shared_ax, (name, f) in zip(axes, input_data):
+	y_before, _, _ = simulate(
+		s_system,
+		forces={
+			s_floors[0]: f
+		},
+		dt=dt
+	)
+	y_after, _, _ = simulate(
+		system,
+		forces={
+			floors[0]: f
+		},
+		dt=dt
+	)
 
-# plot floors after
-for floor, fcolor in zip(floors, floor_colors):
-	after_dplot.plot(freqs, y_after[floor], label=floor.name, color=fcolor, linewidth=0.5)
+	fig, (before_dplot, after_dplot, f_plot) = plt.subplots(3, 1, sharex=True)
+	fig.figurePatch.set_alpha(0)
 
-after_dplot.set_title('output displacement')
-after_dplot.grid()
-after_dplot.legend()
+	max_i_disp = np.max(y_before.values())
+	min_i_disp = np.min(y_before.values())
+	i_disp_range = max_i_disp - min_i_disp
+	ylim = [min_i_disp - 0.1*i_disp_range, max_i_disp + 0.1*i_disp_range]
 
-# plot forces
-f_plot.plot(freqs, f, linewidth=0.5)
-f_plot.set_title('input force')
-f_plot.grid()
+	# plot floors before
+	for floor, fcolor in reversed(zip(s_floors, floor_colors)):
+		before_dplot.plot(t, y_before[floor], label=floor.name, color=fcolor, linewidth=0.5)
+	before_dplot.set(
+		ylim=ylim,
+		title="without absorbers",
+		ylabel="displacement / m"
+	)
+	before_dplot.grid()
+	before_dplot.legend()
 
-plt.show()
-"""
+	# plot floors after
+	for floor, fcolor in reversed(zip(floors, floor_colors)):
+		after_dplot.plot(t, y_after[floor], label=floor.name, color=fcolor, linewidth=0.5)
+	after_dplot.set(
+		ylim=ylim,
+		title="with absorbers",
+		ylabel="displacement / m"
+	)
+	after_dplot.grid()
 
-import scipy.io as sio
+	# plot forces
+	f_range = f.max() - f.min()
+	f_plot.plot(t, f, linewidth=0.5, color='k')
+	f_plot.set(
+		ylabel='input force / N',
+		xlabel='time / s',
+		ylim=[f.min() - 0.1*f_range, f.max() + 0.1*f_range]
+	)
+	f_plot.grid()
 
-mat_contents = sio.loadmat('dataset1-small.mat', squeeze_me=True)
+	fig.savefig('graphs/disp-{}.png'.format(name))
 
-earthquake_forces = mat_contents['f0'] # assigns item for give key
+	fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+	ax2.plot(*fourier(f), color="k", linewidth=0.5)
+	ax2.set(
+		ylabel='amplitude / N',
+		xlabel='frequency / Hz',
+		xlim=(0,20)
+	)
 
-print earthquake_forces
+	resp = frequency_response(s_system, omegas, { s_floors[0]: 1 })
 
-_, (eq_fplot) = plt.subplots(1, 1, sharex=True)
+	for floor, fcolor in reversed(zip(s_floors, floor_colors)):
+		ax1.plot(freqs, np.abs(resp[floor]), label=floor.name, color=fcolor, linewidth=0.5)
+	ax1.set(
+		ylabel='amplitude / N',
+		xlabel='frequency / Hz'
+	)
 
-eq_fplot.plot(earthquake_forces, label="Real earthquake data", color=, linewidth=0.5)
-#before_dplot.set_title('output displacement')
-#before_dplot.grid()
-#before_dplot.legend()
+	fig.savefig('graphs/fft-{}.png'.format(name))
 
-#for el in len(mat_contents):
+	for floor, fcolor in reversed(zip(s_floors, floor_colors)):
+		shared_ax.plot(t, y_before[floor], label=floor.name, color=fcolor, linewidth=0.5)
 
-#print len(mat_contents) # gives length of DICTIONARY (which is 7)
-#print mat_contents.items() # prints (key, value) tuples
+	shared_ax.set(title=name)
 
-#keyls = list(mat_contents.keys())
 
-#for nos in keyls:
-	#print nos
+shared_fig.savefig('graphs/disp-all.png'.format(name))
