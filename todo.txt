@@ -1,0 +1,14 @@
+
+
+Plot graphs
+
+
+Aj:
+Run earthquake data
+Tune for eq data
+Explain matrix origins
+
+
+Eric
+Do equations
+Compare against real data

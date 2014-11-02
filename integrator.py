@@ -6,7 +6,7 @@ import scipy.signal
 import model_config
 import inputs
 from mechanics import Conn, Body, System, simulate, frequency_response
-
+"""
 # configure input signals
 dt = 1/200.0 # dt reduced for efficiency in looping process
 t = np.arange(0, 30, dt)
@@ -193,3 +193,29 @@ f_plot.grid()
 do_plots()
 
 plt.show()
+"""
+
+import scipy.io as sio
+
+mat_contents = sio.loadmat('dataset1-small.mat', squeeze_me=True)
+
+earthquake_forces = mat_contents['f0'] # assigns item for give key
+
+print earthquake_forces
+
+_, (eq_fplot) = plt.subplots(1, 1, sharex=True)
+
+eq_fplot.plot(earthquake_forces, label="Real earthquake data", color=, linewidth=0.5)
+#before_dplot.set_title('output displacement')
+#before_dplot.grid()
+#before_dplot.legend()
+
+#for el in len(mat_contents):
+
+#print len(mat_contents) # gives length of DICTIONARY (which is 7)
+#print mat_contents.items() # prints (key, value) tuples
+
+#keyls = list(mat_contents.keys())
+
+#for nos in keyls:
+	#print nos
