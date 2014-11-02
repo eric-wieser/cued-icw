@@ -176,7 +176,7 @@ def simulate(system, forces, dt):
 		y_dot = (y - y_prev)/dt
 
 		y_values.append(y)
-		yd_values.append(y_dot_dot)
+		yd_values.append(y_dot)
 		ydd_values.append(y_dot_dot)
 
 
