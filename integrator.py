@@ -172,7 +172,7 @@ s_system = System(s_ground)
 y_before, _, _ = simulate(
 	s_system,
 	forces={
-		floors[0]: f
+		s_floors[0]: f
 	},
 	dt=dt
 )
@@ -205,9 +205,6 @@ after_dplot.legend()
 f_plot.plot(freqs, f, linewidth=0.5)
 f_plot.set_title('input force')
 f_plot.grid()
-
-
-do_plots()
 
 plt.show()
 """
